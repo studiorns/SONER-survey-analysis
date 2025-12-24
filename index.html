@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SONER Marketing Analytics Survey - Comprehensive Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="charts.js"></script>
+    <style>
+        @keyframes sonerScan { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes sonerBlip { 0%, 20%, 100% { opacity: 0; } 2%, 15% { opacity: 1; } 3% { transform: scale(1.2); } }
+        .soner-logo { display: flex; align-items: center; color: white; font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 300; }
+        .soner-radar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid white; margin: 0 3px; position: relative; background-color: rgba(255, 255, 255, 0.05); overflow: hidden; }
+        .soner-scanner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; animation: sonerScan 4s linear infinite; transform-origin: center; }
+        .soner-scanner::before { content: ''; position: absolute; top: 0; left: 50%; width: 50%; height: 50%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4)); transform-origin: bottom left; clip-path: polygon(0 0, 100% 0, 0 100%); }
+        .soner-scanner::after { content: ''; position: absolute; top: 0; left: 50%; width: 50%; height: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 1)); transform-origin: left center; box-shadow: 0 0 4px rgba(255, 255, 255, 0.8); }
+        .soner-blip { position: absolute; width: 2px; height: 2px; background-color: white; border-radius: 50%; opacity: 0; box-shadow: 0 0 4px white; }
+        .soner-blip:nth-child(1) { top: 25%; left: 30%; animation: sonerBlip 4s 1s infinite; }
+        .soner-blip:nth-child(2) { top: 65%; left: 60%; animation: sonerBlip 4s 2.5s infinite; }
+        .soner-tagline { color: white; font-size: 8px; text-transform: uppercase; font-weight: 500; letter-spacing: 0.5em; margin-left: 10px; opacity: 0.8; }
+        :root { --primary: #4285f4; --primary-light: #1a2233; --primary-dark: #8ab4f8; --bg-color: #000000; --card-bg: #121212; --section-bg: #181818; --gray-100: #1e1e1e; --gray-200: #2d2d2d; --gray-300: #3d3d3d; --gray-600: #a0a0a0; --gray-800: #e0e0e0; --gray-900: #f0f0f0; --shadow: 0 4px 6px rgba(0, 0, 0, 0.4); --shadow-md: 0 6px 12px rgba(0, 0, 0, 0.5); --radius: 8px; --radius-md: 12px; --transition: all 0.3s ease; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--gray-800); line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        header { background: linear-gradient(135deg, #1a73e8 0%, #174ea6 100%); color: white; padding: 32px 0; text-align: center; margin-bottom: 40px; box-shadow: var(--shadow-md); position: relative; overflow: hidden; }
+        header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 8px; position: relative; }
+        header p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto; position: relative; }
+        h1, h2, h3, h4, h5, h6 { margin-top: 0; font-weight: 600; line-height: 1.3; color: var(--gray-900); }
+        h2 { font-size: 1.75rem; margin-bottom: 1.5rem; display: flex; align-items: center; }
+        h2 i { margin-right: 12px; color: var(--primary); font-size: 1.25rem; }
+        h3 { font-size: 1.35rem; margin-bottom: 1rem; color: var(--primary-dark); display: flex; align-items: center; }
+        h3 i { margin-right: 10px; }
+        h4 { font-size: 1.1rem; margin: 1.5rem 0 1rem 0; color: var(--gray-800); }
+        p { margin-bottom: 1rem; }
+        ul, ol { margin-bottom: 1rem; margin-left: 1.5rem; }
+        li { margin-bottom: 0.5rem; }
+        strong { color: var(--gray-900); font-weight: 600; }
+        .section { background-color: var(--section-bg); border-radius: var(--radius-md); box-shadow: var(--shadow); padding: 28px; margin-bottom: 32px; transition: var(--transition); border: 1px solid var(--gray-300); }
+        .section:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .section h2 { border-bottom: 2px solid var(--gray-200); padding-bottom: 16px; margin-bottom: 28px; }
+        .nav-container { background-color: var(--gray-100); position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+        .nav-menu { list-style: none; display: flex; flex-direction: column; justify-content: center; padding: 0; }
+        .nav-item { margin: 0; }
+        .nav-link { color: var(--gray-700); text-decoration: none; padding: 0.75rem 1rem; display: block; transition: var(--transition); font-weight: 500; position: relative; }
+        .nav-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: var(--primary); transform: scaleX(0); transition: var(--transition); }
+        .nav-link:hover { color: var(--primary); }
+        .nav-link.active::after { transform: scaleX(1); }
+        .metrics-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin: 1.5rem 0; }
+        .metric-card { background-color: var(--card-bg); border-radius: var(--radius); padding: 24px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); transition: var(--transition); border: 1px solid var(--gray-300); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; min-height: 160px; }
+        .metric-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background-color: var(--primary); opacity: 0; transition: var(--transition); }
+        .metric-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .metric-card:hover::before { opacity: 1; }
+        .metric-name { font-weight: 600; margin-bottom: 12px; color: var(--gray-600); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; }
+        .metric-name i { margin-right: 8px; color: var(--primary); font-size: 1rem; }
+        .metric-value { font-size: 2.5rem; font-weight: 700; color: var(--gray-900); margin-bottom: 8px; line-height: 1.1; }
+        .metric-description { font-size: 0.9rem; color: var(--gray-600); margin-top: 8px; }
+        .insight-card { background-color: var(--primary-light); border-left: 4px solid var(--primary); padding: 20px 24px; margin: 1.5rem 0; border-radius: 0 var(--radius) var(--radius) 0; position: relative; transition: var(--transition); }
+        .insight-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        .insight-title { font-weight: 600; color: var(--primary-dark); margin-bottom: 0.5rem; font-size: 1.1rem; display: flex; align-items: center; }
+        .insight-title i { margin-right: 10px; }
+        .chart-container { position: relative; height: 300px; margin: 2rem 0; background-color: var(--card-bg); padding: 20px; border-radius: var(--radius); border: 1px solid var(--gray-300); }
+        .chart-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin: 2rem 0; }
+        .chart-card { background-color: var(--card-bg); border-radius: var(--radius); padding: 20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); border: 1px solid var(--gray-300); height: 400px; }
+        .chart-card h4 { margin-top: 0; margin-bottom: 1rem; color: var(--gray-900); font-size: 1.1rem; }
+        table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; background-color: var(--card-bg); border-radius: var(--radius); overflow: hidden; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--gray-300); }
+        th { background-color: var(--gray-200); color: var(--gray-900); font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
+        tr:hover { background-color: var(--gray-200); }
+        .footer { background-color: var(--gray-100); padding: 20px 0; text-align: center; margin-top: 40px; border-top: 1px solid var(--gray-300); }
+        .print-btn { position: fixed; bottom: 30px; right: 30px; background-color: var(--primary); color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4); display: flex; align-items: center; justify-content: center; transition: var(--transition); z-index: 1000; }
+        .print-btn:hover { background-color: var(--primary-dark); transform: translateY(-4px) scale(1.05); box-shadow: 0 6px 16px rgba(26, 115, 232, 0.5); }
+        .two-column { display: grid; grid-template-columns: 1fr; gap: 24px; margin: 1.5rem 0; }
+        .highlight-box { background-color: var(--card-bg); border-radius: var(--radius); padding: 20px; margin: 1.5rem 0; border: 1px solid var(--gray-300); }
+        @media (min-width: 768px) { 
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); } 
+            .two-column { grid-template-columns: 1fr 1fr; } 
+            .nav-menu { flex-direction: row; flex-wrap: wrap; }
+            .nav-link { padding: 1rem 1.5rem; }
+            .chart-container { height: 400px; }
+        }
+        @media (min-width: 992px) { 
+            .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); } 
+            .chart-grid { grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); }
+        }
+        @media print { body { background-color: white; } .section { box-shadow: none; break-inside: avoid; } .print-btn { display: none; } .nav-container { display: none; } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px;">
+                <div class="soner-logo">
+                    S<div class="soner-radar"><div class="soner-scanner"></div><div class="soner-blip"></div><div class="soner-blip"></div></div>NER
+                    <span class="soner-tagline">Visual Intelligence</span>
+                </div>
+            </div>
+            <h1>Marketing Analytics Survey Report</h1>
+            <p>Comprehensive Analysis | December 2025 | 19 Qualified Respondents</p>
+        </div>
+    </header>
+    
+    <div class="nav-container">
+        <div class="container">
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="#executive-summary" class="nav-link">Executive Summary</a></li>
+                <li class="nav-item"><a href="#visualizations" class="nav-link">Visualizations</a></li>
+                <li class="nav-item"><a href="#analysis" class="nav-link">Full Analysis</a></li>
+                <li class="nav-item"><a href="#recommendations" class="nav-link">Recommendations</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="container">
+        <section id="executive-summary" class="section">
+            <h2><i class="fas fa-chart-line"></i> Executive Summary</h2>
+            <div class="insight-card">
+                <div class="insight-title"><i class="fas fa-bullseye"></i> The Opportunity in Numbers</div>
+                <p>This survey reveals an overwhelming market opportunity for SONER's marketing analytics services. Marketing leaders are drowning in data fragmentation, wasting weeks on manual reporting, and lacking confidence in their ability to measure true ROI across channels.</p>
+            </div>
+            <h3 style="margin-top: 30px; margin-bottom: 20px;"><i class="fas fa-chart-bar"></i> Key Findings</h3>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-gem"></i> Market Validation</div>
+                    <div class="metric-value">95%</div>
+                    <div class="metric-description">Say unified view is "Very" to "Extremely" valuable</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-exclamation-triangle"></i> Pain Level</div>
+                    <div class="metric-value">84%</div>
+                    <div class="metric-description">Find report compilation "Taxing" to "Extremely taxing"</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-question-circle"></i> Confidence Gap</div>
+                    <div class="metric-value">68%</div>
+                    <div class="metric-description">Lack confidence in unified performance view</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-clock"></i> Speed Problem</div>
+                    <div class="metric-value">48%</div>
+                    <div class="metric-description">Take 3+ weeks to get insights after campaigns</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-dollar-sign"></i> Budget Allocated</div>
+                    <div class="metric-value">$11K</div>
+                    <div class="metric-description">Average annual budget; 95% willing to outsource</div>
+                </div>
+            </div>
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-fire"></i> Top 4 Pain Points (Your Value Proposition)</h3>
+            <div class="two-column">
+                <div class="highlight-box">
+                    <h4><i class="fas fa-1"></i> Lack of Unified Cross-Channel View (32%)</h4>
+                    <p><strong>SONER Solution:</strong> Integrates all channels into one comprehensive view</p>
+                </div>
+                <div class="highlight-box">
+                    <h4><i class="fas fa-2"></i> Data Quality & Privacy Constraints (26%)</h4>
+                    <p><strong>SONER Solution:</strong> Provides governance expertise and data quality assurance</p>
+                </div>
+                <div class="highlight-box">
+                    <h4><i class="fas fa-3"></i> Can't Translate Data to Action (21%)</h4>
+                    <p><strong>SONER Solution:</strong> Delivers actionable insights, not just dashboards</p>
+                </div>
+                <div class="highlight-box">
+                    <h4><i class="fas fa-4"></i> Inconsistent KPIs & Attribution (16%)</h4>
+                    <p><strong>SONER Solution:</strong> Standardizes measurement across all channels</p>
+                </div>
+            </div>
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-users"></i> Who They Are</h3>
+            <ul>
+                <li><strong>Seniority:</strong> 53% are CMO/Head level (decision-makers)</li>
+                <li><strong>Complexity:</strong> Average 4.2 vendors + 4.8 data sources (fragmentation)</li>
+                <li><strong>Current State:</strong> 89% use agency reports, 68% use internal dashboards, 53% use Excel (inefficient)</li>
+                <li><strong>Analytics Teams:</strong> 47% have NO analytics team; even the 53% who do still struggle</li>
+            </ul>
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-lightbulb"></i> What They Want (Use Cases)</h3>
+            <table>
+                <thead><tr><th>Use Case</th><th>% Want This</th><th>Implication</th></tr></thead>
+                <tbody>
+                    <tr><td>Strategic planning</td><td>84%</td><td>High-value, executive-level</td></tr>
+                    <tr><td>Budget allocation</td><td>79%</td><td>Business-critical decisions</td></tr>
+                    <tr><td>Board/leadership reporting</td><td>74%</td><td>C-suite deliverables</td></tr>
+                    <tr><td>Campaign ROI measurement</td><td>74%</td><td>Core accountability</td></tr>
+                    <tr><td>Agency evaluation</td><td>53%</td><td>Competitive intelligence on vendors</td></tr>
+                </tbody>
+            </table>
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-handshake"></i> What Makes Them Switch</h3>
+            <ol>
+                <li><strong>Clearer ROI attribution (74%)</strong> ← #1 priority</li>
+                <li><strong>Faster insights (58%)</strong> ← Speed matters</li>
+                <li><strong>More actionable insights (58%)</strong> ← Not just data</li>
+                <li><strong>Better executive reporting (47%)</strong> ← Board-ready quality</li>
+                <li><strong>Reduced reporting effort (42%)</strong> ← Time savings</li>
+            </ol>
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-dollar-sign"></i> Pricing Sweet Spot</h3>
+            <div class="two-column">
+                <div class="highlight-box">
+                    <h4>Monthly Model</h4>
+                    <ul>
+                        <li>Entry: $999/month (32% market)</li>
+                        <li><strong>Standard: $1,499-$1,999/month (53% market) ← FOCUS HERE</strong></li>
+                        <li>Premium: $2,999+/month (16% market)</li>
+                    </ul>
+                </div>
+                <div class="highlight-box">
+                    <h4>Annual Model</h4>
+                    <ul>
+                        <li><strong>Standard: $8K-$12K (68% market) ← FOCUS HERE</strong></li>
+                        <li>Comprehensive: $15K-$20K (21% market)</li>
+                        <li>Enterprise: $25K+ (5% market)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="insight-card" style="margin-top: 40px;">
+                <div class="insight-title"><i class="fas fa-check-circle"></i> Bottom Line</div>
+                <p><strong>The market is ready. The pain is acute. The budget exists.</strong></p>
+                <p>SONER's opportunity is to be the <strong>independent, strategic insights partner</strong> that delivers unified, actionable intelligence marketing leaders need for confident strategic decisions.</p>
+            </div>
+        </section>
+
+        <section id="visualizations" class="section">
+            <h2><i class="fas fa-chart-pie"></i> Data Visualizations</h2>
+            <div class="insight-card">
+                <div class="insight-title"><i class="fas fa-info-circle"></i> About These Charts</div>
+                <p>The following visualizations are generated from survey data, organized into four key themes to help you understand the market opportunity.</p>
+            </div>
+            
+            <h3 style="margin-top: 40px; margin-bottom: 15px;"><i class="fas fa-users"></i> 1. Audience Profile</h3>
+            <p style="color: var(--gray-600); margin-bottom: 20px;">Understanding who your potential customers are and the complexity they manage.</p>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h4>Role Distribution</h4>
+                    <div style="position: relative; height: calc(100% - 40px);"><canvas id="roleChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h4>Number of Vendors Used</h4>
+                    <div style="position: relative; height: calc(100% - 40px);"><canvas id="vendorsChart"></canvas></div>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h4>Number of Data Sources</h4>
+                    <div style="position: relative; height: calc(100% - 40px);"><canvas id="sourcesChart"></canvas></div>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 40px; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> 2. Pain Points & Challenges</h3>
+            <p style="color: var(--gray-600); margin-bottom: 20px;">The struggles marketing leaders face today - this is where SONER adds value.</p>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h4>Report Compilation Burden</h4>
+                    <div style="position: relative; height: calc(100% - 40px);"><canvas id="burdenChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h4>Time to Insights After Campaign</h4>
+                    <div style="position: relative; height: calc(100% - 40px);"><canvas id="timeChart"></canvas></div>
+                </div>
+            </div>
+            <div class="chart-container"><canvas id="confidenceChart"></canvas></div>
+            <div class="chart-container"><canvas id="challengesChart"></canvas></div>
+            
+            <h3 style="margin-top: 40px; margin-bottom: 15px;"><i class="fas fa-gem"></i> 3. Market Validation</h3>
+            <p style="color: var(--gray-600); margin-bottom: 20px;">How much do they value a solution and what drives their decisions?</p>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h4>Value of Unified Solution</h4>
+                    <div style="position: relative; height: calc(100% - 40px);"><canvas id="valueChart"></canvas></div>
+                </div>
+            </div>
+            <div class="chart-container"><canvas id="decisionFactorsChart"></canvas></div>
+            
+            <h3 style="margin-top: 40px; margin-bottom: 15px;"><i class="fas fa-dollar-sign"></i> 4. Budget & Use Cases</h3>
+            <p style="color: var(--gray-600); margin-bottom: 20px;">What they're willing to spend and how they plan to use the solution.</p>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h4>Monthly Budget Allocation</h4>
+                    <div style="position: relative; height: calc(100% - 40px);"><canvas id="monthlyBudgetChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h4>Annual Budget Allocation</h4>
+                    <div style="position: relative; height: calc(100% - 40px);"><canvas id="annualBudgetChart"></canvas></div>
+                </div>
+            </div>
+            <div class="chart-container"><canvas id="useCasesChart"></canvas></div>
+        </section>
+
+        <section id="analysis" class="section">
+            <h2><i class="fas fa-microscope"></i> Comprehensive Analysis</h2>
+            <div class="insight-card">
+                <div class="insight-title"><i class="fas fa-clipboard-check"></i> Survey Methodology</div>
+                <ul>
+                    <li><strong>Survey Period:</strong> December 16-23, 2025</li>
+                    <li><strong>Total Responses:</strong> 19 qualified marketing professionals</li>
+                    <li><strong>Target Audience:</strong> Marketing decision-makers (CMO, Director, Head, Senior Manager)</li>
+                    <li><strong>Data Quality:</strong> All responses reviewed; 2 incomplete responses excluded</li>
+                </ul>
+            </div>
+            <h3><i class="fas fa-users-cog"></i> 1. Respondent Profile Analysis</h3>
+            <h4>Role Distribution & Decision-Making Authority</h4>
+            <ul>
+                <li><strong>CMO / Marketing Director:</strong> 6 respondents (32%)</li>
+                <li><strong>Head of Marketing:</strong> 4 respondents (21%)</li>
+                <li><strong>Senior Marketing Manager:</strong> 7 respondents (37%)</li>
+                <li><strong>Manager/Specialist:</strong> 2 respondents (10%)</li>
+            </ul>
+            <p><strong>Key Insight:</strong> 53% hold C-level or Head positions with strong budget authority and strategic decision-making power.</p>
+            <h4>Current Analytics Capability</h4>
+            <ul>
+                <li><strong>Has analytics team:</strong> 10 organizations (53%)</li>
+                <li><strong>No analytics team:</strong> 9 organizations (47%)</li>
+            </ul>
+            <p><strong>Key Insight:</strong> Nearly half operate without dedicated analytics support. Notably, even organizations WITH analytics teams report significant challenges.</p>
+            <h4>Organizational Complexity</h4>
+            <p><strong>Average Number of Vendors:</strong> 4.2 per organization</p>
+            <p><strong>Average Number of Data Sources:</strong> 4.8 per organization</p>
+            <p><strong>Key Insight:</strong> The majority (53%) juggle 4-6 vendors and data sources simultaneously. This complexity directly correlates with reported pain levels.</p>
+            <h3 style="margin-top: 40px;"><i class="fas fa-exclamation-circle"></i> 2. Pain Points Deep-Dive</h3>
+            <div class="insight-card">
+                <div class="insight-title"><i class="fas fa-chart-line"></i> Report Compilation Burden</div>
+                <ul>
+                    <li><strong>Extremely taxing:</strong> 32%</li>
+                    <li><strong>Taxing:</strong> 52%</li>
+                    <li><strong>Somewhat taxing:</strong> 11%</li>
+                    <li><strong>Not taxing at all:</strong> 5%</li>
+                </ul>
+                <p><strong>Critical Finding:</strong> 84% find the process taxing to extremely taxing, representing significant wasted time and resources.</p>
+            </div>
+            <div class="insight-card">
+                <div class="insight-title"><i class="fas fa-low-vision"></i> Confidence in Unified Performance View</div>
+                <ul>
+                    <li><strong>Very confident:</strong> 0% (ZERO respondents!)</li>
+                    <li><strong>Somewhat confident:</strong> 16%</li>
+                    <li><strong>Neutral:</strong> 26%</li>
+                    <li><strong>Not very confident:</strong> 53%</li>
+                    <li><strong>Not confident at all:</strong> 5%</li>
+                </ul>
+                <p><strong>Critical Finding:</strong> ZERO respondents are "Very confident" and 68% lack confidence. This represents a massive opportunity for SONER.</p>
+            </div>
+            <div class="insight-card">
+                <div class="insight-title"><i class="fas fa-hourglass-half"></i> Time to Insights</div>
+                <ul>
+                    <li><strong>Real-time / same day:</strong> 10%</li>
+                    <li><strong>1-3 days:</strong> 16%</li>
+                    <li><strong>1-2 weeks:</strong> 26%</li>
+                    <li><strong>3+ weeks:</strong> 48%</li>
+                </ul>
+                <p><strong>Critical Finding:</strong> 74% take 1 week or longer, with nearly half (48%) taking 3+ weeks.</p>
+            </div>
+            <h3 style="margin-top: 40px;"><i class="fas fa-tools"></i> 3. Current Tool Stack Analysis</h3>
+            <table>
+                <thead><tr><th>Tool/Method</th><th>% Using</th><th>Insight</th></tr></thead>
+                <tbody>
+                    <tr><td>Agency reports</td><td>89%</td><td>Incumbent but potentially biased</td></tr>
+                    <tr><td>Internal dashboards</td><td>68%</td><td>Struggle to unify them</td></tr>
+                    <tr><td>Excel / manual reporting</td><td>53%</td><td>High inefficiency indicator</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="recommendations" class="section">
+            <h2><i class="fas fa-lightbulb"></i> Strategic Recommendations for SONER</h2>
+            
+            <div class="insight-card">
+                <div class="insight-title"><i class="fas fa-rocket"></i> The Market is Ready</div>
+                <p>This survey validates that marketing leaders are actively seeking a solution like SONER. The pain is real, the budget exists, and the willingness to outsource is overwhelming (95%).</p>
+            </div>
+
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-bullseye"></i> 1. Product Positioning</h3>
+            
+            <h4>Position as the "Independent Analytics Partner"</h4>
+            <div class="highlight-box">
+                <p><strong>Key Message:</strong> Unlike agency reports (which may be biased) or internal dashboards (which are fragmented), SONER is your independent, unified source of truth.</p>
+                <ul>
+                    <li><strong>Emphasize independence:</strong> "Unbiased insights, not vendor spin"</li>
+                    <li><strong>Highlight unification:</strong> "One view across all your channels"</li>
+                    <li><strong>Focus on action:</strong> "Not just data—recommendations you can act on"</li>
+                </ul>
+            </div>
+
+            <h4>Address the Top 4 Pain Points Directly</h4>
+            <div class="two-column">
+                <div class="highlight-box">
+                    <h4>Pain Point #1: Lack of Unified View (32%)</h4>
+                    <p><strong>SONER Solution:</strong> Automated cross-channel integration</p>
+                    <p><strong>Proof Point:</strong> "See all your marketing performance in one dashboard"</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>Pain Point #2: Data Quality (26%)</h4>
+                    <p><strong>SONER Solution:</strong> Data validation & governance</p>
+                    <p><strong>Proof Point:</strong> "Trust your data with our quality assurance"</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>Pain Point #3: Can't Act on Data (21%)</h4>
+                    <p><strong>SONER Solution:</strong> Actionable insights & recommendations</p>
+                    <p><strong>Proof Point:</strong> "Know exactly what to do next"</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>Pain Point #4: Inconsistent KPIs (16%)</h4>
+                    <p><strong>SONER Solution:</strong> Standardized measurement framework</p>
+                    <p><strong>Proof Point:</strong> "Compare apples to apples across all channels"</p>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-dollar-sign"></i> 2. Pricing Strategy</h3>
+            
+            <h4>Recommended Pricing Tiers</h4>
+            <div class="two-column">
+                <div class="highlight-box" style="border: 2px solid var(--primary);">
+                    <h4><i class="fas fa-star"></i> FOCUS: Standard Tier</h4>
+                    <p><strong>Monthly:</strong> $1,499 - $1,999/month</p>
+                    <p><strong>Annual:</strong> $15,000 - $20,000/year (save 20-30%)</p>
+                    <p><strong>Target Market:</strong> 53-68% of respondents</p>
+                    <p><strong>Includes:</strong></p>
+                    <ul>
+                        <li>Unified dashboard across all channels</li>
+                        <li>Monthly executive reports</li>
+                        <li>Quarterly strategic reviews</li>
+                        <li>ROI attribution modeling</li>
+                        <li>Email support with 24hr response</li>
+                    </ul>
+                </div>
+                <div class="highlight-box">
+                    <h4>Entry Tier</h4>
+                    <p><strong>Monthly:</strong> $999/month</p>
+                    <p><strong>Annual:</strong> $10,000/year</p>
+                    <p><strong>Target Market:</strong> 32% of respondents</p>
+                    <p><strong>Includes:</strong></p>
+                    <ul>
+                        <li>Basic unified dashboard</li>
+                        <li>Quarterly reports</li>
+                        <li>Standard metrics only</li>
+                        <li>Email support</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="highlight-box" style="margin-top: 24px;">
+                <h4>Premium/Enterprise Tier</h4>
+                <p><strong>Pricing:</strong> Custom ($25K - $50K+)</p>
+                <p><strong>Target Market:</strong> 5-16% of respondents (enterprise accounts)</p>
+                <p><strong>Includes:</strong> Everything in Standard, plus:</p>
+                <ul>
+                    <li>Custom integrations and APIs</li>
+                    <li>Dedicated analytics consultant</li>
+                    <li>Weekly reports and ad-hoc analysis</li>
+                    <li>Advanced predictive modeling</li>
+                    <li>White-label options</li>
+                    <li>Priority support with same-day response</li>
+                </ul>
+            </div>
+
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-users"></i> 3. Go-to-Market Strategy</h3>
+            
+            <h4>Primary Target Audience</h4>
+            <div class="insight-card">
+                <p><strong>WHO:</strong> CMOs, Marketing Directors, and Heads of Marketing at mid-to-large organizations</p>
+                <p><strong>WHY:</strong> 53% hold these titles with direct budget authority and strategic decision-making power</p>
+                <p><strong>PAIN:</strong> Managing 4-6 vendors, 4-8 data sources, spending weeks on reporting, lacking confidence in their data</p>
+            </div>
+
+            <h4>Key Decision Factors (Priority Order)</h4>
+            <ol>
+                <li><strong>Clearer ROI attribution (74%):</strong> Lead with ROI measurement capabilities in all messaging</li>
+                <li><strong>Faster insights (58%):</strong> Emphasize speed—"Get insights in days, not weeks"</li>
+                <li><strong>Actionable insights (58%):</strong> Show examples of recommendations, not just charts</li>
+                <li><strong>Executive reporting (47%):</strong> Demonstrate board-ready report templates</li>
+                <li><strong>Reduced reporting effort (42%):</strong> Highlight time savings—"Reclaim 2-3 weeks per quarter"</li>
+            </ol>
+
+            <h4>Primary Use Cases to Showcase</h4>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-chess"></i> Strategic Planning</div>
+                    <div class="metric-value">84%</div>
+                    <div class="metric-description">Want this capability</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-coins"></i> Budget Allocation</div>
+                    <div class="metric-value">79%</div>
+                    <div class="metric-description">Want this capability</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-presentation"></i> Board Reporting</div>
+                    <div class="metric-value">74%</div>
+                    <div class="metric-description">Want this capability</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-chart-line"></i> Campaign ROI</div>
+                    <div class="metric-value">74%</div>
+                    <div class="metric-description">Want this capability</div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-handshake"></i> 4. Sales & Marketing Tactics</h3>
+            
+            <h4>Lead Generation Channels</h4>
+            <div class="two-column">
+                <div class="highlight-box">
+                    <h4><i class="fas fa-linkedin"></i> LinkedIn Targeting</h4>
+                    <ul>
+                        <li>Target: CMO, Marketing Director, Head of Marketing</li>
+                        <li>Company size: 100-5,000 employees</li>
+                        <li>Industries: B2B SaaS, E-commerce, Financial Services</li>
+                        <li>Content: ROI calculator, case studies, "State of Marketing Analytics" report</li>
+                    </ul>
+                </div>
+                <div class="highlight-box">
+                    <h4><i class="fas fa-user-tie"></i> Outbound Strategy</h4>
+                    <ul>
+                        <li>Focus on companies using 4+ marketing vendors</li>
+                        <li>Lead with pain point messaging: "Spending weeks on reporting?"</li>
+                        <li>Offer free "Marketing Analytics Audit"</li>
+                        <li>Use decision factor data in pitch deck</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h4>Content Marketing Topics</h4>
+            <ol>
+                <li>"The True Cost of Fragmented Marketing Data" (addresses #1 pain point)</li>
+                <li>"How to Measure ROI Across Every Marketing Channel" (addresses #1 decision factor)</li>
+                <li>"From Data to Decisions: A CMO's Guide" (addresses actionable insights need)</li>
+                <li>"Marketing Analytics Without an Analytics Team" (addresses 47% with no team)</li>
+                <li>"Board-Ready Marketing Reports in 5 Minutes" (addresses executive reporting need)</li>
+            </ol>
+
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-trophy"></i> 5. Competitive Positioning</h3>
+            
+            <div class="two-column">
+                <div class="highlight-box">
+                    <h4>vs. Agency Reports</h4>
+                    <p><strong>Their Weakness:</strong> Potentially biased, slow, expensive</p>
+                    <p><strong>SONER Advantage:</strong> Independent, objective, automated</p>
+                    <p><strong>Message:</strong> "Get the truth, not the spin"</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>vs. Internal Dashboards</h4>
+                    <p><strong>Their Weakness:</strong> Fragmented, require technical resources</p>
+                    <p><strong>SONER Advantage:</strong> Unified, turnkey solution</p>
+                    <p><strong>Message:</strong> "One view, zero maintenance"</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>vs. Analytics Platforms</h4>
+                    <p><strong>Their Weakness:</strong> Complex, require implementation, need expertise</p>
+                    <p><strong>SONER Advantage:</strong> Managed service with expert insights</p>
+                    <p><strong>Message:</strong> "Insights, not just tools"</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>vs. Doing Nothing</h4>
+                    <p><strong>Their Pain:</strong> Weeks wasted, lack of confidence, missed opportunities</p>
+                    <p><strong>SONER Advantage:</strong> ROI in time savings alone</p>
+                    <p><strong>Message:</strong> "What's the cost of not knowing?"</p>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 40px; margin-bottom: 20px;"><i class="fas fa-rocket"></i> 6. Next Steps</h3>
+            
+            <div class="insight-card">
+                <div class="insight-title"><i class="fas fa-tasks"></i> Immediate Actions (Next 30 Days)</div>
+                <ol>
+                    <li><strong>Refine Positioning:</strong> Update website and sales materials to emphasize top 4 pain points</li>
+                    <li><strong>Create ROI Calculator:</strong> Lead magnet showing time & cost savings</li>
+                    <li><strong>Build Case Studies:</strong> Focus on the 4 primary use cases (strategic planning, budget allocation, board reporting, ROI measurement)</li>
+                    <li><strong>Develop Sales Deck:</strong> Incorporate this survey data as proof points</li>
+                    <li><strong>Set Pricing:</strong> Finalize the three-tier structure with Standard as the hero offering</li>
+                </ol>
+            </div>
+
+            <div class="insight-card" style="margin-top: 20px;">
+                <div class="insight-title"><i class="fas fa-calendar-alt"></i> Short-Term Actions (Next 90 Days)</div>
+                <ol>
+                    <li><strong>Launch Lead Gen Campaign:</strong> Target CMOs/Directors on LinkedIn with pain-point messaging</li>
+                    <li><strong>Create Content Library:</strong> Publish 5 key content pieces addressing main pain points</li>
+                    <li><strong>Develop Demo Environment:</strong> Show live examples of unified dashboards and executive reports</li>
+                    <li><strong>Build Partner Network:</strong> Connect with marketing agencies as referral partners (not competitors)</li>
+                    <li><strong>Test Pricing:</strong> A/B test monthly vs. annual pricing with early customers</li>
+                </ol>
+            </div>
+
+            <div class="insight-card" style="margin-top: 20px; background: linear-gradient(135deg, #1a73e8 0%, #174ea6 100%); border-left: 4px solid #ffffff;">
+                <div class="insight-title" style="color: white;"><i class="fas fa-flag-checkered"></i> The Bottom Line</div>
+                <p style="color: white;"><strong>You have a validated market opportunity with clear pain points, willing buyers, and available budget.</strong></p>
+                <p style="color: white;">This survey proves that marketing leaders are actively looking for a solution like SONER. The key to success is positioning yourself as the independent, strategic analytics partner that delivers unified insights and actionable recommendations—not just another dashboard tool.</p>
+                <p style="color: white; margin-bottom: 0;"><strong>The market is ready. Now it's time to execute.</strong></p>
+            </div>
+        </section>
+
+        <div class="footer">
+            <div class="container">
+                <p style="color: var(--gray-600); margin-bottom: 8px;">© 2025 SONER - Visual Intelligence</p>
+                <p style="color: var(--gray-600); font-size: 0.875rem;">Marketing Analytics Survey Report | December 2025</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Active navigation highlighting
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').slice(1) === current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
